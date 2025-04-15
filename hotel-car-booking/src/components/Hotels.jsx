@@ -1,120 +1,176 @@
-import React, { useState } from "react";
-import axios from "axios";
-import sarovaImage from "../assets/Sarova.jpeg";
-import kempinsikiImage from "../assets/Kempinsiki.PNG";
-import socialImage from "../assets/Social House.jpeg";
-import tamarindTreeImage from "../assets/Tamarid.PNG";
-import acaciaPremierImage from "../assets/Acacia Hotel.jpeg";
-import budgetInnImage from "../assets/Budget inn.jpeg";
-const hotels = [
-  {
-    image: sarovaImage,
-    name: "Sarova Panafric",
-    destination: "Kilimani, Kenya",
-    rating: 5,
-    pricePerDay: 12000,
-    pricePerWeek: 51000,
-    mapsLink: "https://www.google.com/maps/place/Sarova+Panafric,+Kilimani,+Kenya",
-  },
-  {
-    image: kempinsikiImage,
-    name: "Villa Rosa Kempinski",
-    destination: "Nairobi, Kenya",
-    rating: 4,
-    pricePerDay: 8000,
-    pricePerWeek: 40000,
-    mapsLink: "https://www.google.com/maps/place/Villa+Rosa+Kempinski,+Nairobi,+Kenya",
-  },
-  {
-    image: socialImage,
-    name: "The Social House",
-    destination: "Nairobi, Kenya",
-    rating: 3,
-    pricePerDay: 7500,
-    pricePerWeek: 51000,
-    mapsLink: "https://www.google.com/maps/place/The+Social+House,+Nairobi,+Kenya",
-  },
-  {
-    image: tamarindTreeImage,
-    name: "Tamarind Tree Hotel",
-    destination: "Langata, Kenya",
-    rating: 3,
-    pricePerDay: 9000,
-    pricePerWeek: 45000,
-    mapsLink: "https://www.google.com/maps/place/Tamarind+Tree+Hotel,+Langata,+Kenya",
-  },
-  {
-    image: acaciaPremierImage,
-    name: "Acacia Premier Hotel",
-    destination: "Kisumu, Kenya",
-    rating: 5,
-    pricePerDay: 15000,
-    pricePerWeek: 70000,
-    mapsLink: "https://www.google.com/maps/place/Acacia+Premier+Hotel,+Kisumu,+Kenya",
-  },
-  {
-    image: budgetInnImage,
-    name: "Budget Inn",
-    destination: "Nakuru, Kenya",
-    rating: 2,
-    pricePerDay: 3000,
-    pricePerWeek: 15000,
-    mapsLink: "https://www.google.com/maps/place/Budget+Inn,+Nakuru,+Kenya",
-  },
-];
+import React, { useState, useEffect } from "react";
+import { Star, MapPin, DollarSign } from "lucide-react";
+
+const BASE_URL = "https://e100-41-90-101-26.ngrok-free.app"; // Ensure this URL is current
 
 const Hotels = () => {
-  const [bookingStatus, setBookingStatus] = useState("");
+  const [hotels, setHotels] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const handleBooking = async (hotel) => {
-    try {
-      const response = await fetch("YOUR_BACKEND_API_URL/book", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(hotel),
-      });
+  useEffect(() => {
+    const fetchHotels = async () => {
+      setLoading(true);
 
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
+      try {
+        // Fetch the hotels from your backend
+        const response = await fetch(`${BASE_URL}/api/hotels`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "69420",
+          },
+        });
+
+        const responseData = await response.json();
+        console.log("Response status:", responseData);
+
+        if (responseData && responseData.length > 0) {
+          setHotels(responseData);
+        } else {
+          console.error("Unexpected data format:", responseData);
+          throw new Error(
+            "Unexpected data format: expected an array of hotels"
+          );
+        }
+      } catch (err) {
+        console.error("Error fetching hotels:", err);
+        setError(
+          `Failed to load hotels. Please try again later. ${err.message}`
+        );
+      } finally {
+        setLoading(false);
       }
+    };
 
-      const data = await response.json();
-      setBookingStatus(`Booking successful: ${data.message}`);
-    } catch (error) {
-      setBookingStatus(`Booking failed: ${error.message}`);
+    fetchHotels();
+  }, []);
+
+  if (loading) return <div>Loading hotels...</div>;
+  if (error) return <div>{error}</div>;
+
+  const renderRating = (rating) => {
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    const stars = [];
+
+    for (let i = 0; i < 5; i++) {
+      if (i < fullStars) {
+        stars.push(
+          <Star
+            key={`star-${i}`}
+            className="w-4 h-4 text-yellow-400 fill-yellow-400"
+          />
+        );
+      } else if (i === fullStars && hasHalfStar) {
+        stars.push(
+          <div key={`star-half-${i}`} className="relative">
+            <Star className="w-4 h-4 text-gray-300 fill-gray-300" />
+            <div className="absolute top-0 left-0 w-1/2 overflow-hidden">
+              <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+            </div>
+          </div>
+        );
+      } else {
+        stars.push(
+          <Star key={`star-empty-${i}`} className="w-4 h-4 text-gray-300" />
+        );
+      }
     }
+    return stars;
   };
 
   return (
-    <div className="max-w-6xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-lg">
-      <h1 className="text-5xl font-bold text-center mb-8 text-blue-800">Explore Our Hotels</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-        {hotels.map((hotel, index) => (
-          <div key={index} className="border bg-gray-50 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-300">
-            {hotel.image && (
-              <img src={hotel.image} alt={hotel.name} className="w-full h-64 object-cover rounded-md mb-5" />
-            )}
-            <h2 className="text-2xl font-semibold text-gray-800">{hotel.name}</h2>
-            <p className="text-gray-600">{hotel.destination}</p>
-            <p className="text-gray-600">Rating: {hotel.rating} stars</p>
-            <p className="text-gray-600">Price per day: KSh {hotel.pricePerDay.toLocaleString()}</p>
-            <p className="text-gray-600">Price per week: KSh {hotel.pricePerWeek.toLocaleString()}</p>
-            <a href={hotel.mapsLink} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline mt-4 block text-center">
-              View on Google Maps
-            </a>
-            <a href="/registraction">
-                 <button className="block mt-3 bg-green-500 text-white text-center py-2 rounded-lg hover:bg-purple-600">
-            BOOK NOW
-          </button>
-          </a>
-          </div>
-        ))}
-      </div>
-      {bookingStatus && <p className="text-center mt-6 text-red-600">{bookingStatus}</p>}
+    <div className="max-w-screen-xl mx-auto p-6">
+      <h1 className="text-3xl font-bold text-gray-800 mb-6">
+        Discover Our Hotels
+      </h1>
+
+      {hotels.length === 0 ? (
+        <div className="flex justify-center items-center h-64 bg-gray-50 rounded-lg border border-gray-200">
+          <p className="text-gray-500 text-lg">
+            No hotels available at the moment.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {hotels.map((hotel) => (
+            <div
+              key={hotel.id}
+              className="bg-white rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100"
+            >
+              <div className="relative h-48 overflow-hidden">
+                <img
+                  src={
+                    hotel.imageUrl?.startsWith("http")
+                      ? hotel.imageUrl
+                      : `${BASE_URL}${hotel.imageUrl}`
+                  }
+                  alt={hotel.name}
+                  className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                />
+                {hotel.featured && (
+                  <div className="absolute top-0 right-0 bg-yellow-500 text-white px-3 py-1 text-sm font-medium">
+                    Featured
+                  </div>
+                )}
+              </div>
+
+              <div className="p-5">
+                <div className="flex justify-between items-start">
+                  <h2 className="text-xl font-bold text-gray-800 mb-2 hover:text-blue-600 transition-colors duration-200">
+                    {hotel.name}
+                  </h2>
+                </div>
+
+                <div className="flex items-center text-gray-600 mb-3">
+                  <MapPin className="w-4 h-4 mr-1" />
+                  <span className="text-sm">{hotel.location}</span>
+                </div>
+
+                <div className="flex items-center mb-4">
+                  <div className="flex mr-2">
+                    {renderRating(hotel.rating || 0)}
+                  </div>
+                  <span className="text-sm text-gray-600">
+                    ({hotel.rating ? hotel.rating.toFixed(1) : "0.0"})
+                  </span>
+                </div>
+
+                {hotel.amenities && (
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {hotel.amenities.map((amenity, index) => (
+                      <span
+                        key={index}
+                        className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs"
+                      >
+                        {amenity}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+                  <div className="flex items-center text-gray-800">
+                    <DollarSign className="w-4 h-4 mr-1 text-green-600" />
+                    <span className="font-bold">
+                      KES {(hotel.pricePerNight || 0).toLocaleString()}
+                    </span>
+                    <span className="text-gray-500 text-sm ml-1">/ night</span>
+                  </div>
+
+                  <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors duration-200">
+                    Book Now
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
 
 export default Hotels;
+
